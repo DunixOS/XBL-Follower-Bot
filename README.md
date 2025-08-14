@@ -66,4 +66,3 @@ python main.py
 - Only Xbox Live XSTS tokens are supported
 - JWE tokens or other Microsoft authentication tokens will not work directly
 - Invalid or expired tokens are automatically removed from tokens.txt
-# XBL-Follower-Bot
