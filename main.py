@@ -11,12 +11,13 @@ from urllib.parse import urlencode
 
 class Follow_Bot:
     def __init__(self):
-        self.users = self.collect_tokens()
+        self.users = []
         self.followed = 0
         self.failed = 0
         self.target = ''
         self.expired_tokens = []
         self.xbox_tokens: Dict[str, Optional[str]] = {}
+        self.token_limit = None
 
 
     async def get_xbl_token(self, session: aiohttp.ClientSession, ms_token: str, token_id: int) -> Optional[str]:
@@ -85,12 +86,15 @@ class Follow_Bot:
                 print(f"\n [\x1b[1;31m!\x1b[1;37m] Request error: {str(e)}")
 
 
-    @staticmethod
-    def collect_tokens() -> list[str]:
+    def collect_tokens(self) -> list[str]:
         script_dir = path.dirname(path.abspath(__file__))
         tokens_path = path.join(script_dir, 'tokens.txt')
         with open(tokens_path, 'r') as token_file:
-            return [token.strip() for token in token_file]
+            all_tokens = [token.strip() for token in token_file]
+
+        if self.token_limit and self.token_limit < len(all_tokens):
+            return all_tokens[:self.token_limit]
+        return all_tokens
 
 
     async def initialise(self) -> None:
@@ -104,6 +108,20 @@ class Follow_Bot:
             print(f" [\x1b[1;32m*\x1b[39m] Tokens: ({len(open(tokens_path, 'r').readlines())}) \n")
         else:
             print(f' [\x1b[1;31m!\x1b[39m] no tokens found in \'\x1b[1;33m{tokens_path}\x1b[39m\'');_exit(0)
+
+        total_tokens = len(open(tokens_path, 'r').readlines())
+        token_input = input(f' [\x1b[1;32m?\x1b[39m] How many tokens to use? (1-{total_tokens}, press Enter for all): ').strip()
+
+        if token_input:
+            try:
+                self.token_limit = min(int(token_input), total_tokens)
+                if self.token_limit < 1:
+                    self.token_limit = total_tokens
+            except ValueError:
+                self.token_limit = total_tokens
+
+        self.users = self.collect_tokens()
+        print(f" [\x1b[1;32m*\x1b[39m] Using {len(self.users)} tokens")
 
         self.target = input(' [\x1b[1;32m?\x1b[39m] target: ');print('')
         await self.start()
