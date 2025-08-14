@@ -2,6 +2,9 @@
 
 A Python-based tool for managing Xbox Live follows using XSTS authentication tokens.
 
+>![Important]
+In order for this tool to work, you must already have valid Xbox Live XSTS Tokens. This tool will not provide you with tokens, it only manages existing tokens, if you need to obtain tokens, you can use the Xbox Live authentication process, or create a horribly complicated script that automatically generates valid tokens.
+
 ## Token Requirements
 
 The script requires valid Xbox Live XSTS tokens. These tokens:
@@ -61,7 +64,7 @@ python main.py
 - `tokens.txt`: Place your authentication tokens in this file, one per line
 - Tokens are automatically validated and expired tokens are removed
 
-> ![NOTE]
+>!Note]
 
 - Only Xbox Live XSTS tokens are supported
 - JWE tokens or other Microsoft authentication tokens will not work directly
