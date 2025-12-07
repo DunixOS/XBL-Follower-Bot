@@ -55,18 +55,19 @@ class Follow_Bot:
             return None
 
     async def follow_target(self, token: str) -> None:
+        await asyncio.sleep(20.0)
+        
         async with aiohttp.ClientSession() as session:
             try:
                 token = token.strip()
                 token_id = len(self.xbox_tokens) + 1
                 if token not in self.xbox_tokens and token not in self.expired_tokens:
-                    print(f"\n [\x1b[1;33m*\x1b[1;37m] Authorizing token {token_id} with XSTS...")
                     self.xbox_tokens[token] = await self.get_xbl_token(session, token, token_id)
 
                 xbl_token = self.xbox_tokens[token]
                 if not xbl_token:
                     self.failed += 1
-                    print(f"\n [\x1b[1;31m!\x1b[1;37m] Failed to get Xbox Live token")
+                    self._update_progress("Failed to get Xbox Live token")
                     return
 
                 async with session.put(
@@ -75,16 +76,21 @@ class Follow_Bot:
                 ) as follow_request:
                     if follow_request.status in [200, 201, 202, 204]:
                         self.followed += 1
+                        self._update_progress("Followed successfully")
                     else:
                         self.failed += 1
                         error_text = await follow_request.text()
-                        print(f"\n [\x1b[1;31m!\x1b[1;37m] Failed with status {follow_request.status}: {error_text}")
-
-                    print(f" [\x1b[1;32m+\x1b[1;37m] target: ({self.target}) | followed: ({self.followed}) | failed: ({self.failed})", end='\r', flush=True)
+                        self._update_progress(f"Failed with status {follow_request.status}")
+                    
             except Exception as e:
                 self.failed += 1
-                print(f"\n [\x1b[1;31m!\x1b[1;37m] Request error: {str(e)}")
-
+                self._update_progress(f"Error: {str(e)}")
+    
+    def _update_progress(self, message: str = ""):
+        """Helper method to update and display the progress"""
+        total = self.followed + self.failed
+        print("\r\033[K", end="", flush=True)
+        print(f" [\x1b[1;36m*\x1b[1;37m] Progress: {self.followed} followed, {self.failed} failed (Total: {total}) {message}", end="", flush=True)
 
     def collect_tokens(self) -> list[str]:
         script_dir = path.dirname(path.abspath(__file__))
