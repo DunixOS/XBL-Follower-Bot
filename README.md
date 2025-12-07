@@ -3,9 +3,9 @@
 A Python-based tool for managing Xbox Live follows using XSTS authentication tokens.
 
 >[!IMPORTANT]
-1. In order for this tool to work, you must already have valid Xbox Live XSTS Tokens. This tool will not provide you with tokens, it only manages existing tokens, if you need to obtain tokens, you can use the Xbox Live authentication process, or create a horribly complicated script that automatically generates valid tokens.
-2. If you need help with this tool and how to get it working, you can DM [@playfairs](<https://discord.com/users/1426711359059394662>) on Discord.
-3. Assuming you want to DM me on Discord, do you DM me if you have questions about tools such as Autoclaimers, or other Xbox tools, I will work on those tools when I have the time, I am tired of people asking me to make tools that I don't provide, if I do not provide something, Do not ask me to make it. There are reasons why I don't have some tools.
+>- 1. In order for this tool to work, you must already have valid Xbox Live XSTS Tokens. This tool will not provide you with tokens, it only manages existing tokens, if you need to obtain tokens, you can use the Xbox Live authentication process, or create a horribly complicated script that automatically generates valid tokens.
+>- 2. If you need help with this tool and how to get it working, you can DM [@playfairs](<https://discord.com/users/1426711359059394662>) on Discord.
+>- 3. Assuming you want to DM me on Discord, do you DM me if you have questions about tools such as Autoclaimers, or other Xbox tools, I will work on those tools when I have the time, I am tired of people asking me to make tools that I don't provide, if I do not provide something, Do not ask me to make it. There are reasons why I don't have some tools.
 
 ## Token Requirements
 
