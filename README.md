@@ -3,9 +3,14 @@
 A Python-based tool for managing Xbox Live follows using XSTS authentication tokens.
 
 >[!IMPORTANT]
+>- 1. If you need help with this tool and how to get it working, you can DM [@playfairs](<https://discord.com/users/1426711359059394662>) on Discord.
+>- 2. If you specifically need help obtaining **Xbox Tokens**, I can **NOT** help you with this, I was working on a tool for a while, but it because outdated after short time, so if you add me to ask for tokens, I can and will **NOT** help or provide tokens as I both cannot nor have interesting in creating / obtaining them myself.
+>- 3. Assuming you want to DM me on Discord, do you DM me if you have questions about ANY other tools, please read the **README** displayed at the [Home of this Organiztion](https://github.com/DunixOS).
+
+
+>[!NOTE]
 >- 1. In order for this tool to work, you must already have valid Xbox Live XSTS Tokens. This tool will not provide you with tokens, it only manages existing tokens, if you need to obtain tokens, you can use the Xbox Live authentication process, or create a horribly complicated script that automatically generates valid tokens.
->- 2. If you need help with this tool and how to get it working, you can DM [@playfairs](<https://discord.com/users/1426711359059394662>) on Discord.
->- 3. Assuming you want to DM me on Discord, do you DM me if you have questions about tools such as Autoclaimers, or other Xbox tools, I will work on those tools when I have the time, I am tired of people asking me to make tools that I don't provide, if I do not provide something, Do not ask me to make it. There are reasons why I don't have some tools.
+>- 2. It is recommended to only do 10,000 bots per hour to prevent triggering a system which essentially flags your account as being botted, staying under the 10,000 per hr keeps you in the clear of this.
 
 ## Token Requirements
 
