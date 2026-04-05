@@ -32,8 +32,8 @@ The script requires valid Xbox Live XSTS tokens. These tokens:
 
 1. Clone the repository
 ```bash
-git clone https://github.com/playfairs/XBL-Follower-Bot.git
-cd xbox-follower-bot
+git clone https://github.com/DunixOS/XBL-Follower-Bot.git
+cd XBL-Follower-Bot
 ```
 
 2. Install dependencies
@@ -57,6 +57,10 @@ Each token should be on its own line. The user_hash and token_data are specific 
 1. Run the script:
 ```bash
 python main.py
+```
+or
+```bash
+python3 main.py
 ```
 
 2. When prompted, enter the target gamertag to follow
