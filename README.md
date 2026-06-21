@@ -1,6 +1,9 @@
 # Xbox Live Follower Bot
 
 A Python-based tool for managing Xbox Live follows using XSTS authentication tokens.
+![](https://rv.playfairs.cc/DunixOS/XBL-Follower-Bot)
+
+---
 
 >[!IMPORTANT]
 >- **I:** If you need help with this tool and how to get it working, you can DM [@playfairs](<https://discord.com/users/1426711359059394662>) on Discord.
