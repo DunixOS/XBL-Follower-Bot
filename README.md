@@ -117,3 +117,7 @@ Your tokens.txt file should contain XSTS tokens in the following format:
 ```
   XBL3.0 x=<user_hash>;<token_data>
 ```
+
+## Xbox Token Manager.
+
+What's this?
