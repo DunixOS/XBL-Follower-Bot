@@ -40,3 +40,6 @@ env/
 .DS_Store
 tokens.txt
 *.log
+
+# Added by cargo
+target

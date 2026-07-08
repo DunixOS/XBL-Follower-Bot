@@ -1,0 +1,11 @@
+[package]
+name = "xbox-follower-bot"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reqwest = "0.13.2"
+
+[dependencies.tokio]
+version = "1.48.0"
+features = ["rt", "macros", "rt-multi-thread", "sync", "signal"]
