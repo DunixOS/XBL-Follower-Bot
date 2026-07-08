@@ -121,3 +121,20 @@ Your tokens.txt file should contain XSTS tokens in the following format:
 ```
   XBL3.0 x=<user_hash>;<token_data>
 ```
+
+# XTM - (Xbox Token Manager)
+
+What's this?
+
+Xbox Token Manager is a newer application I am working on, for managing tokens and executing different actions. These actions include but are not limited to:
+
+- Following Users (In bulk)
+- Direct Messaging (In bulk)
+- Reporting (In bulk)
+- Token Expiry Detection
+- Batch execution (In bulk)
+- Session management
+
+---
+
+The source code for XTM can be found [here](https://github.com/DunixOS/XTM)
