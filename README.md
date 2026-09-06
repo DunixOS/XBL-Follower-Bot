@@ -10,7 +10,7 @@ A tool for managing Xbox Live follows using XSTS authentication tokens.
 > **READ EVERYTHING BELOW IF YOU PLAN ON ADDING ME**
 >
 >- **I:**   If you need help with this tool and how to get it working,
->           you can DM [@playfairs](<https://discord.com/users/1426711359059394662>) or join the [Support Server](https://discord.gg/AuHrcC8Dcr) on Discord.
+>           you can DM [@playfairs](<https://discord.com/users/1426711359059394662>) or join my [server](https://discord.gg/AuHrcC8Dcr) on Discord.
 >- **II:**  If you specifically need help obtaining **Xbox Tokens**, I can **NOT** help you with this,
 >           I was working on a tool for a while, but it became outdated after short time,
 >           so if you add me to ask for tokens, I can and will **NOT** help or provide tokens
