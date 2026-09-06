@@ -1,61 +1,112 @@
-use std::{collections::HashMap, io, time::Duration};
+mod token;
+mod xbox;
 
-use reqwest::{
-    Client,
-    header::{HeaderMap, HeaderName, HeaderValue},
+use std::{
+    io::{self, Write},
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
-extern crate reqwest;
+use reqwest::Client;
+use token::{XboxToken, load_tokens, remove_tokens_atomically, token_count};
+use tokio::sync::Semaphore;
+use xbox::{ApiError, XboxApiConfig, XboxClient};
 
-pub fn load_tokens() -> Vec<String> {
-    let file_loc = std::env::var("PWD").expect("somehow, PWD isn't set.");
-
-    match std::fs::read_to_string((file_loc.clone() + "/tokens.txt").as_str()) {
-        Err(e) if e.kind() == io::ErrorKind::NotFound => {
-            println!("[ERROR]: {} was not found!", file_loc.clone());
-            vec![]
-        }
-        Err(e) => panic!("{}", e),
-        Ok(s) => return s.lines().map(String::from).collect(),
-    }
-}
-
-pub async fn get_xuid(gamertag: String, token: String) -> Option<String> {
-    let mut headers_input: HashMap<String, String> = HashMap::new();
-    let token = token.replace("XBL3.0 x=", "");
-    headers_input.insert("Authorization".into(), format!("XBL3.0 x={token}"));
-    headers_input.insert("x-xbl-contract-version".into(), "2".into());
-    headers_input.insert("Accept-Language".into(), "en-US".into());
-
-    let mut headers = HeaderMap::new();
-    for (k, v) in headers_input {
-        let name = HeaderName::from_bytes(k.as_bytes()).ok()?;
-        let value = HeaderValue::from_str(&v).ok()?;
-        headers.insert(name, value);
-    }
-
-    let client = Client::new();
-
-    let res = client
-        .get(format!(
-            "https://profile.xboxlive.com/users/gt({gamertag})/profile/settings"
-        ))
-        .headers(headers)
-        .timeout(Duration::from_secs(10))
-        .send()
-        .await
-        .ok();
-
-    println!("Status={}", &res?.status());
-    Some("".into())
+fn prompt(message: &str) -> Result<String, io::Error> {
+    print!("{message}");
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    Ok(input.trim().to_owned())
 }
 
 #[tokio::main]
-async fn main() {
-    let tokens = load_tokens();
-    for token in &tokens {
-        println!("{}", token)
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let token_path = [
+        PathBuf::from("tokens.txt"),
+        PathBuf::from("python/tokens.txt"),
+    ]
+    .into_iter()
+    .find(|path| path.is_file())
+    .unwrap_or_else(|| PathBuf::from("tokens.txt"));
+    let raw_tokens = load_tokens(&token_path)?;
+    if raw_tokens.is_empty() {
+        return Err("tokens.txt contains no non-empty lines".into());
+    }
+    println!("Loaded {} token(s).", raw_tokens.len());
+    let requested = prompt(&format!(
+        "How many tokens to use? (1-{}, Enter for all): ",
+        raw_tokens.len()
+    ))?;
+    let count = token_count(&requested, raw_tokens.len());
+    let target = prompt("Target gamertag: ")?;
+    if target.is_empty() {
+        return Err("target gamertag cannot be empty".into());
+    }
+    let tokens: Vec<(String, XboxToken)> = raw_tokens
+        .into_iter()
+        .take(count)
+        .filter_map(|raw| XboxToken::parse(&raw).map(|token| (token.source().to_owned(), token)))
+        .collect();
+    if tokens.is_empty() {
+        return Err("no valid XBL3.0 or Microsoft JWE tokens found".into());
     }
 
-    get_xuid("goll".into(), tokens[0].clone()).await;
+    let config = XboxApiConfig::default();
+    let client = XboxClient::new(
+        Client::builder()
+            .user_agent("xbox-follower-bot/0.1")
+            .build()?,
+        config.clone(),
+    );
+    let semaphore = Arc::new(Semaphore::new(config.concurrency));
+    let successful = Arc::new(AtomicUsize::new(0));
+    let failed = Arc::new(AtomicUsize::new(0));
+    let mut tasks = Vec::with_capacity(tokens.len());
+    for (raw, token) in tokens {
+        let permit = Arc::clone(&semaphore).acquire_owned().await?;
+        let client = client.clone();
+        let target = target.clone();
+        let successful = Arc::clone(&successful);
+        let failed = Arc::clone(&failed);
+        tasks.push(tokio::spawn(async move {
+            let result = client.follow(&token, &target).await;
+            drop(permit);
+            match &result {
+                Ok(()) => {
+                    successful.fetch_add(1, Ordering::Relaxed);
+                    println!("success: one follow confirmed");
+                }
+                Err(error) => {
+                    failed.fetch_add(1, Ordering::Relaxed);
+                    eprintln!("failed: {error}");
+                }
+            }
+            (raw, result)
+        }));
+    }
+    let mut permanently_invalid = Vec::new();
+    for task in tasks {
+        let (raw, result) = task.await?;
+        if matches!(result, Err(ApiError::PermanentAuth(_))) {
+            permanently_invalid.push(raw);
+        }
+    }
+    if !permanently_invalid.is_empty() {
+        remove_tokens_atomically(&token_path, &permanently_invalid)?;
+        println!(
+            "Removed {} permanently invalid token(s).",
+            permanently_invalid.len()
+        );
+    }
+    let ok = successful.load(Ordering::Relaxed);
+    let errors = failed.load(Ordering::Relaxed);
+    println!(
+        "Finished: {ok} successful, {errors} failed, {} processed.",
+        ok + errors
+    );
+    Ok(())
 }

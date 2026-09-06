@@ -43,3 +43,7 @@ tokens.txt
 
 # Added by cargo
 target
+
+# proj
+
+tokens.env

@@ -1,140 +1,78 @@
-# Xbox Live Follower Bot
+# Xbox Follower CLI
 
-A tool for managing Xbox Live follows using XSTS authentication tokens.
+## English
 
-![](https://rv.playfairs.cc/DunixOS/XBL-Follower-Bot)
+This repository is a Rust-only rewrite of the former Python prototype. It accepts the Microsoft compact-JWE credentials used by the original `python/tokens.txt` and sends a follow request for each account, with bounded concurrency and conservative retries.
 
----
+### Important authentication limitation
 
->[!IMPORTANT]
-> **READ EVERYTHING BELOW IF YOU PLAN ON ADDING ME**
->
->- **I:**   If you need help with this tool and how to get it working,
->           you can DM [@playfairs](<https://discord.com/users/1426711359059394662>) or join my [server](https://discord.gg/AuHrcC8Dcr) on Discord.
->- **II:**  If you specifically need help obtaining **Xbox Tokens**, I can **NOT** help you with this,
->           I was working on a tool for a while, but it became outdated after short time,
->           so if you add me to ask for tokens, I can and will **NOT** help or provide tokens
->           as I both cannot nor have interest in creating / obtaining them myself.
->- **III:** Assuming you want to DM me on Discord, before you DM me about ANY other tools, please read the **README** displayed at the [Home of this Organization](https://github.com/DunixOS).
+The token file may contain either already-issued Xbox Live credentials:
 
->[!NOTE]
->- **I:**   In order for this tool to work, you must already have valid Xbox Live XSTS Tokens.
->           This tool will not provide you with tokens, it only manages existing tokens, if you
->           need to obtain tokens, you can use the Xbox Live authentication process, or create a
->           horribly complicated script that automatically generates valid tokens.
->- **II:**  It is recommended to only do 10,000 bots per hour to prevent triggering a system which
->           essentially flags your account as being botted, staying under the 10,000 per hr keeps
->           you in the clear of this.
+```text
+XBL3.0 x=<user_hash>;<xsts_token>
+```
 
-## Token Requirements
+or Microsoft compact JWE/RPS tickets with five dot-separated segments, such as the format in `python/tokens.txt`. The JWE header is validated as `RSA-OAEP` plus `A128CBC-HS256`; the encrypted contents are never decoded by this application.
 
-The script requires valid Xbox Live XSTS tokens, these tokens:
-- Must be in the XBL3.0 format (preferably without "XBL3.0 x=" - we do sanitize it out.)
-- Are typically obtained through Xbox Live authentication
-- Have a limited lifespan and will require renewal
-- Must have proper permissions for social actions
+For a JWE, the application performs the real two-step exchange: it sends `d=<JWE>` to `user.auth.xboxlive.com/user/authenticate`, sends the returned Xbox User Token to `xsts.auth.xboxlive.com/xsts/authorize`, then constructs `XBL3.0 x=<uhs>;<xsts_token>`. Ready-made XBL3.0 credentials skip these steps.
 
-## Features
+### Architecture
 
-- Multi-token support for batch following
-- Automatic token validation and expiration handling
-- Clean console output with status updates
-- Automatic removal of expired tokens
+- `src/main.rs`: interactive CLI, bounded task orchestration, counters, and final summary.
+- `src/token.rs`: one-pass token loading, JWE/XBL3 validation, token-limit behavior, and atomic removal.
+- `src/xbox.rs`: Microsoft authentication, XSTS exchange, URL construction, follow request, response classification, and retry policy.
 
-## Using XFB
+The follow request is `PUT /users/me/people/gt(<percent-encoded-gamertag>)` on `https://social.xboxlive.com`, with `Authorization: XBL3.0 x=...` and `X-XBL-Contract-Version: 2`. HTTP 200, 201, 202, and 204 are counted as success. No request, network error, or unexpected response is counted as success.
 
-If you aren't going to use the releases version -
-you will need to clone the repo using:
+Concurrency defaults to four requests. HTTP 408, 429, 5xx, and transport failures are retried at most twice with exponential backoff. Numeric `Retry-After` values are honored up to 60 seconds. A token is removed only for HTTP 401 with a recognized permanent XErr; 403, malformed responses, rate limits, and server errors remain in the file.
+
+### Usage
 
 ```sh
-  git clone https://github.com/DunixOS/XBL-Follower-Bot.git
-  cd XBL-Follower-Bot
+cp tokens.txt.example tokens.txt
+# Replace the example with real credentials, without printing them in logs.
+cargo run
 ```
 
-Then follow below with what version you will want.
+The program checks `tokens.txt` first and falls back to `python/tokens.txt`. It asks for a token count and target gamertag. Empty input uses all non-empty lines. Invalid count input also uses all tokens, matching the original workflow while avoiding silent token-file corruption.
 
-### A. Manual - Rust
-
-This way is recommended, as it will be the **most maintained**,
-and will run more stable than the **Python version**.
-
-<details>
-  <summary>Dependencies</summary>
-
-  - [Rust (rustup)](https://rustup.rs/)
-</details>
-
-Compiling the Rust codebase
+### Verification
 
 ```sh
-  cargo build --release
+cargo fmt --check
+cargo check
+cargo build
+cargo test
+cargo clippy -- -D warnings
 ```
 
-Running the Rust project
+These checks exercise compilation, nine unit tests, formatting, and strict linting. They do not perform a live Xbox follow and no real credential was used during development.
+
+## Русская версия
+
+Это полностью переписанный Rust-only CLI вместо прежнего Python-прототипа. Он принимает Microsoft compact JWE credentials из исходного `python/tokens.txt` и отправляет follow-запросы с ограниченной concurrency и осторожными повторами.
+
+### Аутентификация
+
+Файл может содержать готовые Xbox Live credentials:
+
+```text
+XBL3.0 x=<user_hash>;<xsts_token>
+```
+
+Также поддерживается compact JWE из пяти сегментов, как в `python/tokens.txt`. Rust проверяет заголовок `RSA-OAEP` и `A128CBC-HS256`, но не пытается расшифровывать содержимое.
+
+Для JWE выполняется корректная цепочка: `d=<JWE>` отправляется в `user.auth.xboxlive.com/user/authenticate`, полученный Xbox User Token отправляется в `xsts.auth.xboxlive.com/xsts/authorize`, затем строится `XBL3.0 x=<uhs>;<xsts_token>`. Готовый `XBL3.0` используется напрямую.
+
+Follow выполняется через `PUT /users/me/people/gt(<percent-encoded-gamertag>)` на `https://social.xboxlive.com` с contract version `2`. Только HTTP 200, 201, 202 и 204 считаются успехом. Concurrency по умолчанию равна 4; 408, 429, 5xx и сетевые ошибки повторяются ограниченное число раз с учетом числового `Retry-After`.
+
+Удаляются только токены с HTTP 401 и распознанным постоянным XErr. Rate limit, 403, ошибки сервера, поврежденный JSON и неопределенные ошибки токенов сохраняются.
+
+### Запуск и проверка
 
 ```sh
-  cargo run --release
+cp tokens.txt.example tokens.txt
+cargo run
 ```
 
-### B. Manual - Python
-
-<details>
-  <summary>Runtime Dependencies</summary>
-
-  - [Python 3.14](https://www.python.org/downloads/release/python-3144/)
-  - Pip (should come with above Python)
-
-  #### Collecting other dependencies from PIP
-
-  Please note if you are running Python on Windows, and installed
-  via python.org, you need to prioritize that version in PATH,
-  this is due to stub binaries being used to redirect you to the
-  WS (Windows Store) link.
-
-  ```sh
-    python3 -m ensurepip
-    pip install -r python/requirements.txt
-  ```
-</details>
-
-
-Running the Python
-
-```sh
-  python3 python/main.py
-```
-
-## Configuration
-
-- `tokens.txt`: Place your authentication tokens in this file, one per line
-- Tokens are automatically validated and expired tokens are removed
-
->[!NOTE]
->- Only Xbox Live XSTS tokens are supported
->- JWE tokens or other Microsoft authentication tokens will not work directly
->- Invalid or expired tokens are automatically removed from tokens.txt
-
-## Token Format
-
-Your tokens.txt file should contain XSTS tokens in the following format:
-
-```
-  XBL3.0 x=<user_hash>;<token_data>
-```
-
-# XTM - (Xbox Token Manager)
-
-What's this?
-
-Xbox Token Manager is a newer application I am working on, for managing tokens and executing different actions. These actions include but are not limited to:
-
-- Following Users (In bulk)
-- Direct Messaging (In bulk)
-- Reporting (In bulk)
-- Token Expiry Detection
-- Batch execution (In bulk)
-- Session management
-
----
-
-The source code for XTM can be found [here](https://github.com/DunixOS/XTM)
+Проверки: `cargo fmt --check`, `cargo check`, `cargo build`, `cargo test`, `cargo clippy -- -D warnings`. Они не выполняют live-follow в Xbox; реальные credentials в разработке не использовались.
