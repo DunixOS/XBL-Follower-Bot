@@ -1,7 +1,5 @@
 # Xbox Follower CLI
 
-## English
-
 This repository is a Rust-only rewrite of the former Python prototype. It accepts the Microsoft compact-JWE credentials used by the original `python/tokens.txt` and sends a follow request for each account, with bounded concurrency and conservative retries.
 
 ### Important authentication limitation
@@ -47,32 +45,3 @@ cargo clippy -- -D warnings
 ```
 
 These checks exercise compilation, nine unit tests, formatting, and strict linting. They do not perform a live Xbox follow and no real credential was used during development.
-
-## Русская версия
-
-Это полностью переписанный Rust-only CLI вместо прежнего Python-прототипа. Он принимает Microsoft compact JWE credentials из исходного `python/tokens.txt` и отправляет follow-запросы с ограниченной concurrency и осторожными повторами.
-
-### Аутентификация
-
-Файл может содержать готовые Xbox Live credentials:
-
-```text
-XBL3.0 x=<user_hash>;<xsts_token>
-```
-
-Также поддерживается compact JWE из пяти сегментов, как в `python/tokens.txt`. Rust проверяет заголовок `RSA-OAEP` и `A128CBC-HS256`, но не пытается расшифровывать содержимое.
-
-Для JWE выполняется корректная цепочка: `d=<JWE>` отправляется в `user.auth.xboxlive.com/user/authenticate`, полученный Xbox User Token отправляется в `xsts.auth.xboxlive.com/xsts/authorize`, затем строится `XBL3.0 x=<uhs>;<xsts_token>`. Готовый `XBL3.0` используется напрямую.
-
-Follow выполняется через `PUT /users/me/people/gt(<percent-encoded-gamertag>)` на `https://social.xboxlive.com` с contract version `2`. Только HTTP 200, 201, 202 и 204 считаются успехом. Concurrency по умолчанию равна 4; 408, 429, 5xx и сетевые ошибки повторяются ограниченное число раз с учетом числового `Retry-After`.
-
-Удаляются только токены с HTTP 401 и распознанным постоянным XErr. Rate limit, 403, ошибки сервера, поврежденный JSON и неопределенные ошибки токенов сохраняются.
-
-### Запуск и проверка
-
-```sh
-cp tokens.txt.example tokens.txt
-cargo run
-```
-
-Проверки: `cargo fmt --check`, `cargo check`, `cargo build`, `cargo test`, `cargo clippy -- -D warnings`. Они не выполняют live-follow в Xbox; реальные credentials в разработке не использовались.
