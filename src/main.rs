@@ -11,7 +11,7 @@ use std::{
 };
 
 use reqwest::Client;
-use token::{XboxToken, load_tokens, remove_tokens_atomically, token_count};
+use token::{XboxToken, load_tokens, locate_token_file, remove_tokens_atomically, token_count};
 use tokio::sync::Semaphore;
 use xbox::{ApiError, XboxApiConfig, XboxClient};
 
@@ -25,13 +25,7 @@ fn prompt(message: &str) -> Result<String, io::Error> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let token_path = [
-        PathBuf::from("tokens.txt"),
-        PathBuf::from("python/tokens.txt"),
-    ]
-    .into_iter()
-    .find(|path| path.is_file())
-    .unwrap_or_else(|| PathBuf::from("tokens.txt"));
+    let token_path = locate_token_file(&PathBuf::from("."));
     let raw_tokens = load_tokens(&token_path)?;
     if raw_tokens.is_empty() {
         return Err("tokens.txt contains no non-empty lines".into());

@@ -22,6 +22,20 @@ pub enum XboxToken {
     MicrosoftJwe(String),
 }
 
+pub fn locate_token_file(root: &Path) -> PathBuf {
+    [
+        "tokens.env",
+        ".env",
+        "tokens",
+        "tokens.txt",
+        "python/tokens.txt",
+    ]
+    .into_iter()
+    .map(|name| root.join(name))
+    .find(|path| path.is_file())
+    .unwrap_or_else(|| root.join("tokens.txt"))
+}
+
 impl XboxToken {
     pub fn parse(value: &str) -> Option<Self> {
         let value = value.trim();
@@ -82,7 +96,7 @@ pub fn load_tokens(path: &Path) -> Result<Vec<String>, TokenError> {
         .lines()
         .filter_map(|line| {
             let value = line.trim();
-            (!value.is_empty()).then(|| value.to_owned())
+            (!value.is_empty() && !value.starts_with('#')).then(|| value.to_owned())
         })
         .collect())
 }
@@ -153,6 +167,20 @@ mod tests {
         assert_eq!(token_count("0", 5), 5);
         assert_eq!(token_count("bad", 5), 5);
         assert_eq!(token_count("99", 5), 5);
+    }
+
+    #[test]
+    fn locates_supported_token_file_names_in_order() {
+        let root =
+            std::env::temp_dir().join(format!("xbox-follower-path-test-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("tokens.txt"), "token").unwrap();
+        assert_eq!(locate_token_file(&root), root.join("tokens.txt"));
+        fs::write(root.join(".env"), "token").unwrap();
+        assert_eq!(locate_token_file(&root), root.join(".env"));
+        fs::write(root.join("tokens.env"), "token").unwrap();
+        assert_eq!(locate_token_file(&root), root.join("tokens.env"));
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
